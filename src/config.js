@@ -17,6 +17,9 @@ const utils = require('./utils');
  * @property {(object|undefined)} consentData - Consent data if cmpApi is 'static'
  * @property {(function|undefined)} callback - Function to call back when User ID is available. if callbackTimeoutInMs is not provided, will be fired only if a User ID is available.
  * @property {(number|undefined)} callbackTimeoutInMs - Delay in ms after which the callback is guaranteed to be fired. A User ID may not yet be available at this time.
+ * @property {(string|undefined)} pd - Publisher data to help ID5 link IDs across domains. See details on generating the value in the README
+ * @property {(string|undefined)} customHostname - Change the hostname for calls to the ID5 servers
+ * @property {(boolean|true)} autoSwitchHostname - Allow the API to detect when the customHost should be used vs the standard ID5 host for improved cross-domain reconciliation
  */
 
 export function newConfig() {
@@ -37,7 +40,9 @@ export function newConfig() {
     partnerUserId: 'String',
     callback: 'Function',
     callbackTimeoutInMs: 'Number',
-    pd: 'String'
+    pd: 'String',
+    customHostname: 'String',
+    autoSwitchHostname: 'Boolean'
   };
 
   function resetConfig() {
@@ -50,7 +55,8 @@ export function newConfig() {
           consentData: undefined,
           gdprApplies: undefined
         },
-        getVendorConsents: {}
+        getVendorConsents: {},
+        getTCData: undefined
       },
       cookieName: 'id5id.1st',
       refreshInSeconds: 7200,
@@ -59,7 +65,9 @@ export function newConfig() {
       partnerUserId: undefined,
       callback: undefined,
       callbackTimeoutInMs: undefined,
-      pd: ''
+      pd: '',
+      customHostname: '',
+      autoSwitchHostname: true
     };
   }
 

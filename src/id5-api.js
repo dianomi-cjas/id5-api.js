@@ -6,6 +6,8 @@ import * as utils from './utils';
 import * as consent from './consentManagement';
 import { getRefererInfo } from './refererDetection';
 
+const ID5_DEFAULT_HOSTNAME = 'id5-sync.com';
+
 export const ID5 = getGlobal();
 
 ID5.loaded = true;
@@ -42,6 +44,7 @@ ID5.init = function (options) {
     const storedDateTime = (new Date(+utils.getCookie(lastCookieName(cfg)))).getTime();
     const refreshNeeded = storedDateTime <= 0 || ((Date.now() - storedDateTime) > (cfg.refreshInSeconds * 1000));
     const expiresStr = (new Date(Date.now() + (cfg.cookieExpirationInSeconds * 1000))).toUTCString();
+    const hostname = getHostname(cfg, storedResponse);
     let nb = getNbFromCookie(cfg);
     let idSetFromStoredResponse = false;
 
@@ -77,7 +80,7 @@ ID5.init = function (options) {
         if (!storedResponse || !storedResponse.universal_uid || !storedResponse.signature || refreshNeeded) {
           const gdprApplies = (consentData && consentData.gdprApplies) ? 1 : 0;
           const gdprConsentString = (consentData && consentData.gdprApplies) ? consentData.consentString : '';
-          const url = `https://id5-sync.com/g/v2/${cfg.partnerId}.json?gdpr_consent=${gdprConsentString}&gdpr=${gdprApplies}`;
+          const url = `https://${hostname}/g/v2/${cfg.partnerId}.json?gdpr_consent=${gdprConsentString}&gdpr=${gdprApplies}`;
           const signature = (storedResponse && storedResponse.signature) ? storedResponse.signature : '';
           const pubId = (storedResponse && storedResponse.ID5ID) ? storedResponse.ID5ID : ''; // TODO: remove when 1puid isn't needed
           const data = {
@@ -108,7 +111,7 @@ ID5.init = function (options) {
                     utils.setCookie(nbCookieName(cfg), (idSetFromStoredResponse ? 0 : 1), expiresStr);
                     if (responseObj.cascade_needed === true) {
                       const isSync = cfg.partnerUserId && cfg.partnerUserId.length > 0;
-                      const syncUrl = `https://id5-sync.com/${isSync ? 's' : 'i'}/${cfg.partnerId}/8.gif?${isSync ? 'puid=' + cfg.partnerUserId + '&' : ''}gdpr_consent=${gdprConsentString}&gdpr=${gdprApplies}`;
+                      const syncUrl = `https://${ID5_DEFAULT_HOSTNAME}/${isSync ? 's' : 'i'}/${cfg.partnerId}/8.gif?${isSync ? 'puid=' + cfg.partnerUserId + '&' : ''}gdpr_consent=${gdprConsentString}&gdpr=${gdprApplies}`;
                       utils.logInfo('Opportunities to cascade available:', syncUrl);
                       utils.deferPixelFire(syncUrl);
                     }
@@ -158,6 +161,12 @@ function incrementNb(cfg, expiresStr, nb) {
   nb++;
   utils.setCookie(nbCookieName(cfg), nb, expiresStr);
   return nb;
+}
+
+function getHostname(cfg, storedObj) {
+  const validCustomHostname = cfg.customHostname && cfg.customHostname.length > 1;
+  const tpcs = !storedObj || typeof storedObj.tpcs === 'undefined' || (storedObj.tpcs && storedObj.tpcs === true);
+  return (validCustomHostname && (cfg.autoSwitchHostname === false || (cfg.autoSwitchHostname === true && !tpcs))) ? cfg.customHostname : ID5_DEFAULT_HOSTNAME;
 }
 
 export default ID5;
